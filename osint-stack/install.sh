@@ -111,7 +111,8 @@ wrap sfcli        'cd "$OSINT_HOME/src/spiderfoot" && exec "$OSINT_HOME/venvs/sp
 wrap theHarvester 'exec "$OSINT_HOME/venvs/theharvester/bin/theHarvester" "$@"'
 wrap harvestview  'exec "$OSINT_HOME/venvs/theharvester/bin/harvestview" "$@"'
 wrap harvest-report 'exec "$OSINT_HOME/venvs/theharvester/bin/harvest-report" "$@"'
-wrap shodan       'exec "$OSINT_HOME/venvs/shodan/bin/shodan" "$@"'
+wrap shodan       'export PYTHONWARNINGS="ignore::UserWarning"
+exec "$OSINT_HOME/venvs/shodan/bin/shodan" "$@"'
 
 # ---------------------------------------------------------------- smoke test
 log "smoke test"
