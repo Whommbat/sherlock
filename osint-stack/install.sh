@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build an OSINT toolkit on a Linux host:
-#   sherlock (this repo), blackbird, maigret, spiderfoot, theHarvester, shodan
+#   sherlock (this repo), blackbird, maigret, spiderfoot, theHarvester, shodan,
+#   phoneinfoga, ignorant
 #
 # Each tool gets its own virtualenv (they need different Python versions and
 # conflicting pins), and a wrapper script lands in $OSINT_HOME/bin.
@@ -59,6 +60,8 @@ fetch maigret       https://github.com/soxoj/maigret            5b590c4ff3da1757
 fetch spiderfoot    https://github.com/smicallef/spiderfoot     0f815a203afebf05c98b605dba5cf0475a0ee5fd
 fetch theHarvester  https://github.com/laramies/theHarvester    49a38f8d33c32336bbf6a111ea723ea223116265
 fetch shodan-python https://github.com/achillean/shodan-python  87a0688d1e5b7e4bb13ae4f5fd7cb937a671cba8
+fetch ignorant      https://github.com/megadose/ignorant         40b3eb734ef3d55e6d16eb314e49dbf520fa1f64
+PHONEINFOGA_VERSION=2.11.0
 
 # venv <name> <python version>
 venv() { uv venv -q --allow-existing -p "$2" "$VENVS/$1"; echo "$VENVS/$1/bin/python"; }
@@ -92,6 +95,25 @@ py=$(venv shodan 3.12)
 # shodan's CLI still imports pkg_resources, which setuptools>=81 dropped
 uv pip install -q -p "$py" "$SRC/shodan-python" 'setuptools<81'
 
+log "ignorant"
+py=$(venv ignorant 3.12)
+uv pip install -q -p "$py" "$SRC/ignorant"
+
+log "phoneinfoga $PHONEINFOGA_VERSION"
+# Go binary from upstream releases; no Python involved
+case "$(uname -m)" in
+  x86_64)        pi_arch=x86_64 ;;
+  aarch64|arm64) pi_arch=arm64 ;;
+  armv7l|armv6l) pi_arch=armv6 ;;
+  *) echo "phoneinfoga: no release for $(uname -m), skipping"; pi_arch= ;;
+esac
+if [ -n "$pi_arch" ]; then
+  mkdir -p "$SRC/phoneinfoga"
+  curl -sSL "https://github.com/sundowndev/phoneinfoga/releases/download/v$PHONEINFOGA_VERSION/phoneinfoga_Linux_$pi_arch.tar.gz" \
+    | tar xz -C "$SRC/phoneinfoga" phoneinfoga
+  chmod +x "$SRC/phoneinfoga/phoneinfoga"
+fi
+
 # ---------------------------------------------------------------- wrappers
 log "writing wrappers to $BIN"
 wrap() { # wrap <name> <body>
@@ -113,6 +135,8 @@ wrap harvestview  'exec "$OSINT_HOME/venvs/theharvester/bin/harvestview" "$@"'
 wrap harvest-report 'exec "$OSINT_HOME/venvs/theharvester/bin/harvest-report" "$@"'
 wrap shodan       'export PYTHONWARNINGS="ignore::UserWarning"
 exec "$OSINT_HOME/venvs/shodan/bin/shodan" "$@"'
+wrap ignorant     'exec "$OSINT_HOME/venvs/ignorant/bin/ignorant" "$@"'
+wrap phoneinfoga  'exec "$OSINT_HOME/src/phoneinfoga/phoneinfoga" "$@"'
 
 # ---------------------------------------------------------------- smoke test
 log "smoke test"
@@ -122,6 +146,8 @@ log "smoke test"
 "$BIN/spiderfoot" --help >/dev/null && echo "spiderfoot ok"
 "$BIN/theHarvester" -h >/dev/null 2>&1 && echo "theHarvester ok"
 "$BIN/shodan" version 2>/dev/null
+"$BIN/ignorant" --help >/dev/null && echo "ignorant ok"
+[ -x "$SRC/phoneinfoga/phoneinfoga" ] && "$BIN/phoneinfoga" version
 
 log "done"
 cat <<MSG
@@ -132,4 +158,6 @@ Then try:
   maigret someuser             shodan init <API_KEY> && shodan host 8.8.8.8
   theHarvester -d example.com -b crtsh
   spiderfoot                   # web UI on http://127.0.0.1:5001
+  phoneinfoga scan -n "+15551234567"
+  ignorant +1 5551234567
 MSG

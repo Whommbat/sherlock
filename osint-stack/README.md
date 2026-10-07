@@ -1,6 +1,6 @@
 # OSINT stack
 
-One-shot build of six OSINT tools on a Linux host, each in its own
+One-shot build of eight OSINT tools on a Linux host, each in its own
 virtualenv with a wrapper on `PATH`.
 
 | Tool | Source | Python | Wrapper(s) |
@@ -11,6 +11,8 @@ virtualenv with a wrapper on `PATH`.
 | spiderfoot | smicallef/spiderfoot | 3.11 | `spiderfoot`, `sfcli` |
 | theHarvester | laramies/theHarvester | 3.14 | `theHarvester`, `harvestview`, `harvest-report` |
 | shodan | achillean/shodan-python | 3.12 | `shodan` |
+| phoneinfoga | sundowndev/phoneinfoga (release binary) | none | `phoneinfoga` |
+| ignorant | megadose/ignorant | 3.12 | `ignorant` |
 
 ## Install
 
@@ -49,6 +51,13 @@ safe and is how you upgrade after bumping a pinned commit in `install.sh`.
   resolves paths from its working directory; the wrapper cd's there for you.
 - **shodan** needs `shodan init <API_KEY>` once. Its CLI still imports
   `pkg_resources`, so the venv pins `setuptools<81`.
+- **phoneinfoga** is a Go binary pulled from upstream releases, so it needs
+  no Python. `phoneinfoga scan -n "+15551234567"` for the CLI,
+  `phoneinfoga serve -p 5080` for the web UI. The `numverify` and
+  `googlecse` scanners need keys set as `NUMVERIFY_API_KEY`,
+  `GOOGLECSE_CX`, and `GOOGLE_API_KEY` in the environment.
+- **ignorant** takes the country code and number as separate arguments:
+  `ignorant +1 5551234567`. It checks Amazon, Instagram, and Snapchat.
 - **maigret** is installed without the optional `[pdf]` extra (needs libcairo).
   Add `'maigret[pdf]'` to its install line if you want PDF reports.
 
@@ -61,3 +70,5 @@ safe and is how you upgrade after bumping a pinned commit in `install.sh`.
 | spiderfoot | `0f815a203afe` | 2023-11-05 |
 | theHarvester | `49a38f8d33c3` | 2026-10-02 |
 | shodan-python | `87a0688d1e5b` | 2023-12-16 |
+| ignorant | `40b3eb734ef3` | 2023-12-29 |
+| phoneinfoga | release v2.11.0 | |
